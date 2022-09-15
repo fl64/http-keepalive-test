@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ilyakaznacheev/cleanenv"
-	"io/ioutil"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -34,7 +34,7 @@ func makeReq(ctx context.Context, c *http.Client, req *http.Request, sleep time.
 			}
 			defer resp.Body.Close()
 
-			b, err := ioutil.ReadAll(resp.Body)
+			b, err := io.ReadAll(resp.Body)
 			if err != nil {
 				fmt.Println("read body error:", err)
 				return
