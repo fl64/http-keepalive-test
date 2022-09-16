@@ -16,13 +16,18 @@ import (
 )
 
 type Cfg struct {
-	SleepDuration          time.Duration `yaml:"sleep-duration" env:"SLEEP_DURATION" env-default:"1s"`
-	SleepBeforeTermination time.Duration `yaml:"sleep-before-termintation" env:"SLEEP_BEFORE_TERMINATION" env-default:"15s"`
-	Url                    string        `yaml:"url" env:"URL" env-default:"http://ifconfig.me"`
-	Method                 string        `yaml:"method" env:"METHOD" env-default:"GET"`
+	SleepDuration                  time.Duration `yaml:"sleep-duration" env:"SLEEP_DURATION" env-default:"1s"`
+	SleepBeforeTermination         time.Duration `yaml:"sleep-before-termintation" env:"SLEEP_BEFORE_TERMINATION" env-default:"15s"`
+	Url                            string        `yaml:"url" env:"URL" env-default:"http://ifconfig.me"`
+	Method                         string        `yaml:"method" env:"METHOD" env-default:"GET"`
+	DialerTimeout                  time.Duration `yaml:"dialer-timeout" env:"DIALER_TIMEOUT" env-default:"5s"`
+	DialerKeepAlive                time.Duration `yaml:"dialer-keepalive" env:"DIALER_KEEPALIVE" env-default:"5s"`
+	TransportIdleConnectionTimeout time.Duration `yaml:"idle-connection-timeout" env:"IDLE_CONNECTION_TIMEOUT" env-default:"5s"`
+	ClientTimeout                  time.Duration `yaml:"client-timeout" env:"CLIENT_TIMEOUT" env-default:"5s"`
 }
 
 func makeReq(ctx context.Context, c *http.Client, req *http.Request, sleep time.Duration) {
+	var counter int
 	for {
 		select {
 		case <-ctx.Done():
@@ -40,8 +45,9 @@ func makeReq(ctx context.Context, c *http.Client, req *http.Request, sleep time.
 				fmt.Println("read body error:", err)
 				return
 			}
-			fmt.Printf("time: %v response body: %s\n", time.Now(), string(b))
+			fmt.Printf("counter: %d time: %v response body: %s\n", counter, time.Now(), string(b))
 			time.Sleep(sleep)
+			counter++
 		}
 	}
 }
@@ -61,14 +67,14 @@ func main() {
 
 	t := &http.Transport{
 		DialContext: (&net.Dialer{
-			Timeout:   5 * time.Second,
-			KeepAlive: 5 * time.Second,
+			Timeout:   cfg.DialerTimeout,
+			KeepAlive: cfg.DialerKeepAlive,
 		}).DialContext,
-		IdleConnTimeout: 5 * time.Second,
+		IdleConnTimeout: cfg.TransportIdleConnectionTimeout,
 	}
 	c := &http.Client{
 		Transport: t,
-		Timeout:   time.Second * 5,
+		Timeout:   cfg.ClientTimeout,
 	}
 	req, err := http.NewRequest(cfg.Method, cfg.Url, nil)
 	if err != nil {
