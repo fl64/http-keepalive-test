@@ -26,24 +26,24 @@ type Cfg struct {
 	ClientTimeout                  time.Duration `yaml:"client-timeout" env:"CLIENT_TIMEOUT" env-default:"5s"`
 }
 
-func makeReq(ctx context.Context, c *http.Client, req *http.Request, sleep time.Duration) {
+func makeReq(ctx context.Context, c *http.Client, req *http.Request, sleep time.Duration) error {
 	var counter int
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return nil
 		default:
 			resp, err := c.Do(req)
 			if err != nil {
 				fmt.Println("http get error:", err)
-				return
+				return err
 			}
 			defer resp.Body.Close()
 
 			b, err := io.ReadAll(resp.Body)
 			if err != nil {
 				fmt.Println("read body error:", err)
-				return
+				return err
 			}
 			fmt.Printf("counter: %d time: %v response body: %s\n", counter, time.Now(), string(b))
 			time.Sleep(sleep)
@@ -101,7 +101,10 @@ func main() {
 		time.Sleep(cfg.SleepBeforeTermination)
 		cancel()
 	}()
-	makeReq(ctx, c, req, cfg.SleepDuration)
+	err = makeReq(ctx, c, req, cfg.SleepDuration)
+	if err != nil {
+		log.Panic(err)
+	}
 	c.CloseIdleConnections()
 	fmt.Println("Well done")
 }
