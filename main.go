@@ -61,13 +61,14 @@ func main() {
 
 	t := &http.Transport{
 		DialContext: (&net.Dialer{
+			Timeout:   5 * time.Second,
 			KeepAlive: 5 * time.Second,
 		}).DialContext,
 		IdleConnTimeout: 5 * time.Second,
 	}
 	c := &http.Client{
 		Transport: t,
-		//Timeout:   time.Second * 5,
+		Timeout:   time.Second * 5,
 	}
 	req, err := http.NewRequest(cfg.Method, cfg.Url, nil)
 	if err != nil {
