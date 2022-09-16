@@ -16,9 +16,10 @@ import (
 )
 
 type Cfg struct {
-	SleepDuration time.Duration `yaml:"sleep-duration" env:"SLEEP_DURATION" env-default:"3s"`
-	Url           string        `yaml:"url" env:"URL" env-default:"http://ifconfig.me"`
-	Method        string        `yaml:"method" env:"METHOD" env-default:"GET"`
+	SleepDuration          time.Duration `yaml:"sleep-duration" env:"SLEEP_DURATION" env-default:"1s"`
+	SleepBeforeTermination time.Duration `yaml:"sleep-before-termintation" env:"SLEEP_BEFORE_TERMINATION" env-default:"15s"`
+	Url                    string        `yaml:"url" env:"URL" env-default:"http://ifconfig.me"`
+	Method                 string        `yaml:"method" env:"METHOD" env-default:"GET"`
 }
 
 func makeReq(ctx context.Context, c *http.Client, req *http.Request, sleep time.Duration) {
@@ -39,7 +40,7 @@ func makeReq(ctx context.Context, c *http.Client, req *http.Request, sleep time.
 				fmt.Println("read body error:", err)
 				return
 			}
-			fmt.Println("response body:", string(b))
+			fmt.Printf("time: %v response body: %s\n", time.Now(), string(b))
 			time.Sleep(sleep)
 		}
 	}
@@ -89,6 +90,8 @@ func main() {
 		s := <-sigChan
 		close(sigChan)
 		log.Println("Catch signal: ", s)
+		log.Printf("Sleep for %v \n", cfg.SleepBeforeTermination)
+		time.Sleep(cfg.SleepBeforeTermination)
 		cancel()
 	}()
 	makeReq(ctx, c, req, cfg.SleepDuration)
